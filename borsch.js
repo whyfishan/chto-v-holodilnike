@@ -93,10 +93,12 @@
       const wantFront = di > 0.02;
       if (wantFront !== it.inFront) { (wantFront ? front : back).appendChild(it.img); it.inFront = wantFront; }
 
-      it.img.style.width = size + 'px';
-      it.img.style.opacity = opacity.toFixed(3);
+      // ширину меняем только когда она правда изменилась — иначе браузер каждый кадр пересчитывает раскладку
+      if (it.w !== size) { it.img.style.width = size + 'px'; it.w = size; }
+      const op = opacity.toFixed(2);
+      if (it.op !== op) { it.img.style.opacity = op; it.op = op; }
       it.img.style.transform = `translate(${(x - size / 2).toFixed(1)}px, ${(yy - size / 2).toFixed(1)}px) rotate(${rot.toFixed(1)}deg) scale(${scale.toFixed(3)})`;
-      if (it.lbl) it.lbl.style.opacity = clamp(1 - lift * 2.5).toFixed(2);
+      if (it.lbl) { const lo = clamp(1 - lift * 2.5).toFixed(2); if (it.lo !== lo) { it.lbl.style.opacity = lo; it.lo = lo; } }
     });
     if (plateBox) plateBox.classList.toggle('full', landed === n);
   }

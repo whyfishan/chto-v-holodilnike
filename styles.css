@@ -148,7 +148,7 @@ main .pick { background: none; border: 0; padding: 0; }
 #продукты .head::before { display: none; }
 #продукты .head h2, #продукты .head .sub, #продукты .head .eyebrow { text-shadow: 0 2px 14px rgba(0,0,0,.95), 0 0 3px rgba(0,0,0,.8); }
 #продукты .head h2 em { color: #ffe3bd; }
-main .group { background: var(--card); }
+main .group { background: rgba(28,28,28,.86); } /* очень слегка прозрачные — ингредиенты чуть проглядывают */
 /* Мелкие кнопки (вкладки, фильтры, «докупить») — тоже сплошные, чтобы текст не сливался */
 main .tab:not([aria-selected="true"]), main .filter:not([aria-pressed="true"]) { background: var(--bg); }
 main .search { background: var(--card); }
@@ -533,4 +533,16 @@ main .contact { background: radial-gradient(circle at 100% 0%, rgba(240,138,36,.
 html .link, html .nav a, html .chip, html .tab, html .filter, html .shop, html .bestbuy__item,
 html .card__go, html .tg, html .top__counter, html .modal__close, html .btn {
   transition: transform .18s ease, background-color .15s, border-color .15s, color .15s;
+}
+/* ===== Телефон: прозрачнее и легче для процессора ===== */
+@media (max-width: 700px) {
+  /* группы продуктов на всю ширину — делаем заметно прозрачнее, чтобы не было «чёрного пятна» */
+  main .group { background: rgba(28,28,28,.6); }
+  main .card { background: linear-gradient(180deg, rgba(31,31,31,.5), rgba(23,23,23,.5)); }
+  /* «матовое стекло» шапки каждый кадр перерисовывает всё под собой — на телефоне это тормозит.
+     Делаем шапку почти сплошной без размытия */
+  .top { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgba(13,13,13,.96); }
+  /* тени у летящих ингредиентов тоже тяжёлые — на телефоне без них */
+  .fall-item { filter: none; }
+  .hero__art::before { filter: none; }
 }
