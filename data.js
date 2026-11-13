@@ -438,5 +438,41 @@ const NUTRITION = {
   smetannik: { b: 5.0, j: 13.0, u: 38.0, fact: 'Это один из самых простых домашних тортов: и тесто, и крем делаются на сметане.' },
 };
 
+// ===== Продукты «по желанию» =====
+// Без них блюдо всё равно получится, поэтому они не мешают попасть в «Можно приготовить сейчас».
+// В рецепте помечаются как «по желанию».
+const OPTIONAL = {
+  ukha: ['greens'],
+  okroshka: ['radish', 'greens'],
+  solyanka: ['olives'],
+  plov: ['garlic'],
+  golubcy: ['carrot'],
+  grechka: ['tpaste'],
+  stroganov: ['tpaste'],
+  zharkoe: ['garlic'],
+  kurica: ['garlic', 'onion'],
+  tefteli: ['sourcream'],
+  draniki: ['onion'],
+  carbonara: ['garlic'],
+  bolognese: ['carrot', 'garlic'],
+  alfredo: ['garlic'],
+  aglio: ['greens'],
+  pomodoro: ['basil'],
+  margarita: ['basil'],
+  classic: ['tomato', 'lettuce', 'onion'],
+  cheese: ['pickles', 'onion', 'mustard'],
+  chickenb: ['lettuce', 'tomato'],
+  bacon: ['lettuce'],
+  double: ['pickles'],
+  mushroomb: ['lettuce', 'tomato'],
+  vinegret: ['onion'],
+  caesar: ['garlic'],
+  greek: ['pepper', 'onion'],
+  caprese: ['basil'],
+  bruschetta: ['basil'],
+  ovoshi: ['onion', 'greens'],
+  tiramisu: ['cocoa'],
+};
+
 // Калории из БЖУ, округление до 5 ккал
 const kcalOf = (n) => Math.round((n.b * 4 + n.j * 9 + n.u * 4) / 5) * 5;

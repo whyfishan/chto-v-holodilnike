@@ -79,7 +79,9 @@
   }
 
   // ----- блюда -----
-  const missingOf = (d) => d.ing.filter((i) => !selected.has(i));
+  // Необязательные продукты («по желанию») не мешают блюду попасть в «можно приготовить»
+  const isOptional = (d, id) => (OPTIONAL[d.id] || []).includes(id);
+  const missingOf = (d) => d.ing.filter((i) => !isOptional(d, i) && !selected.has(i));
   const catName = (id) => (CATEGORIES.find((c) => c.id === id) || {}).name;
 
   function cardHTML(d, mode) {
@@ -179,13 +181,17 @@
     const d = DISHES.find((x) => x.id === id);
     if (!d) return;
     const hasAny = selected.size > 0;
-    const ings = d.ing.map((pid) => {
+    // сначала обязательные, потом «по желанию»
+    const order = [...d.ing.filter((i) => !isOptional(d, i)), ...d.ing.filter((i) => isOptional(d, i))];
+    const ings = order.map((pid) => {
       const p = byId[pid];
       const have = selected.has(pid);
-      if (!hasAny) return `<li class="have"><span class="mark">•</span><span>${p.name}</span></li>`;
-      return have
-        ? `<li class="have"><span class="mark">✓</span><span>${p.name}</span></li>`
-        : `<li class="need"><span class="mark">✕</span><span>${p.name}</span>${shopsHTML(p.name)}</li>`;
+      const opt = isOptional(d, pid);
+      const optTag = opt ? '<small class="opt">по желанию</small>' : '';
+      if (!hasAny) return `<li class="have${opt ? ' optional' : ''}"><span class="mark">•</span><span>${p.name}</span>${optTag}</li>`;
+      if (have) return `<li class="have"><span class="mark">✓</span><span>${p.name}</span>${optTag}</li>`;
+      if (opt) return `<li class="optional"><span class="mark">–</span><span>${p.name}</span>${optTag}</li>`;
+      return `<li class="need"><span class="mark">✕</span><span>${p.name}</span>${shopsHTML(p.name)}</li>`;
     }).join('');
     $('#modalBody').innerHTML = `<div class="recipe">
       <div class="recipe__top">

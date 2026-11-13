@@ -291,6 +291,9 @@ em { font-style: normal; color: var(--accent); }
 .ings .need .mark { background: rgba(255,122,89,.15); color: var(--miss); }
 .ings .need > span:not(.mark) { color: var(--miss); }
 .ings .shops { width: 100%; padding-left: 28px; }
+.ings .optional .mark { background: rgba(167,161,154,.12); color: var(--muted); }
+.ings .optional > span:not(.mark) { color: var(--muted); }
+.ings .opt { font-size: 11px; color: var(--muted); border: 1px solid #3a3a3a; border-radius: 999px; padding: 1px 8px; }
 .ings .staple { color: var(--muted); font-size: 12px; margin-top: 4px; }
 .steps { margin: 0; padding: 0; list-style: none; counter-reset: s; display: grid; gap: 12px; }
 .steps li { counter-increment: s; display: grid; grid-template-columns: 30px 1fr; gap: 10px; font-size: 14px; line-height: 1.55; }
