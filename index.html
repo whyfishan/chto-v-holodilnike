@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;600;700&family=Manrope:wght@400;500;600;700&family=Marck+Script&display=swap&subset=cyrillic" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
 
@@ -43,14 +43,25 @@
         <button class="btn" id="demoBtn" type="button">Показать пример</button>
       </div>
       <ul class="perks">
-        <li><b>60 блюд</b><span>супы, горячее, десерты</span></li>
+        <li><b>82 блюда</b><span>супы, горячее, десерты</span></li>
         <li><b>3 кухни</b><span>русская, итальянская, американская</span></li>
         <li><b>Мини-рецепты</b><span>коротко и по шагам</span></li>
       </ul>
     </div>
-    <div class="hero__art">
-      <div class="hero__plate"><img src="img/borsch.webp" alt="Тарелка борща"></div>
-      <div class="hero__stamp"><small>с любовью</small><b>ДОМА</b><small>вкуснее</small></div>
+    <!-- «Башня» из ингредиентов борща: при прокрутке они падают в тарелку в конце страницы (borsch.js) -->
+    <div class="hero__art" aria-hidden="true">
+      <div class="tower" id="tower">
+        <!-- слои сверху вниз, как в референсе; --y — высота «этажа» -->
+        <div class="slot" style="--y:0;  --r:-6deg"><img src="img/hero/dill.webp" alt=""><span class="lbl">Зелень</span></div>
+        <div class="slot" style="--y:1;  --r:4deg"><img src="img/hero/tomato.webp" alt=""><span class="lbl">Томаты</span></div>
+        <div class="slot" style="--y:2;  --r:-3deg"><img src="img/hero/garlic.webp" alt=""><span class="lbl">Чеснок</span></div>
+        <div class="slot" style="--y:3;  --r:5deg"><img src="img/hero/onion.webp" alt=""><span class="lbl">Лук</span></div>
+        <div class="slot" style="--y:4;  --r:-8deg"><img src="img/hero/carrot.webp" alt=""><span class="lbl">Морковь</span></div>
+        <div class="slot" style="--y:5;  --r:3deg"><img src="img/hero/potato.webp" alt=""><span class="lbl">Картофель</span></div>
+        <div class="slot" style="--y:6;  --r:-4deg"><img src="img/hero/cabbage.webp" alt=""><span class="lbl">Капуста</span></div>
+        <div class="slot" style="--y:7;  --r:6deg"><img src="img/hero/beet.webp" alt=""><span class="lbl">Свёкла</span></div>
+        <div class="slot" style="--y:8;  --r:-2deg"><img src="img/hero/beef.webp" alt=""><span class="lbl">Говядина</span></div>
+      </div>
     </div>
   </section>
 
@@ -86,6 +97,8 @@
     </div>
 
     <div class="tabs" id="tabs" role="tablist"></div>
+    <div class="filters" id="filters"></div>
+    <p class="filters__note" id="filtersNote"></p>
 
     <div id="results"></div>
   </section>
@@ -122,6 +135,19 @@
       </a>
     </div>
   </section>
+
+  <!-- Финал: тарелка, в которую падают ингредиенты с первого экрана -->
+  <section class="section wrap finale" id="финал">
+    <div class="finale__text">
+      <p class="eyebrow"><i></i>И напоследок</p>
+      <h2>Борщ <em>готов</em></h2>
+      <p class="sub sub--left">Пока ты листал страницу, все ингредиенты оказались в тарелке. Осталось только налить и позвать родных к столу.</p>
+    </div>
+    <div class="finale__plate" id="plateBox">
+      <img id="plate" src="img/hero/borsch-plate.webp" alt="Тарелка борща со сметаной и укропом">
+      <div class="glass-stamp" aria-hidden="true"><small>с любовью</small><b>ДОМА</b><small>вкуснее</small></div>
+    </div>
+  </section>
 </main>
 
 <footer class="foot">
@@ -146,7 +172,8 @@
 </dialog>
 
 <!-- ?v=… — номер версии: при каждом обновлении сайта увеличивать, чтобы браузеры брали свежие файлы -->
-<script src="data.js?v=3"></script>
-<script src="app.js?v=3"></script>
+<script src="data.js?v=4"></script>
+<script src="app.js?v=4"></script>
+<script src="borsch.js?v=4"></script>
 </body>
 </html>

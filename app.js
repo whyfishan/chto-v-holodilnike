@@ -7,17 +7,37 @@
     { id: 'lavka', name: 'Купить в Яндекс Лавке', url: (q) => 'https://lavka.yandex.ru/search?text=' + encodeURIComponent(q) },
   ];
 
+  // ----- фильтры -----
+  // group: фильтры из одной группы взаимоисключающие (нельзя «до 30 минут» и «до часа» сразу)
+  const FILTERS = [
+    { id: 't30', name: '⏱ До 30 минут', group: 'time', test: (d) => d.time <= 30 },
+    { id: 't60', name: '⏱ До часа', group: 'time', test: (d) => d.time <= 60 },
+    { id: 'halal', name: '🌙 Халяль', test: (d) => isHalal(d) },
+    { id: 'light', name: '🥗 Лёгкие — до 150 ккал', test: (d) => NUTRITION[d.id] && kcalOf(NUTRITION[d.id]) <= 150 },
+    { id: 'veg', name: '🌱 Без мяса и рыбы', test: (d) => d.ing.every((i) => byId[i].g !== 'meat') },
+    { id: 'kids', name: '👶 Детям', test: (d) => KIDS.includes(d.id) },
+    { id: 'protein', name: '💪 Много белка — от 10 г', test: (d) => NUTRITION[d.id] && NUTRITION[d.id].b >= 10 },
+  ];
+  const FILTER_KEY = 'holodilnik-filtry';
+
   // ----- состояние -----
   let selected = new Set();
   let activeCat = 'all';
+  let filters = new Set();
   try {
     const saved = JSON.parse(localStorage.getItem(STORE_KEY) || '[]');
     if (Array.isArray(saved)) selected = new Set(saved.filter((id) => byId[id]));
+    const savedF = JSON.parse(localStorage.getItem(FILTER_KEY) || '[]');
+    if (Array.isArray(savedF)) filters = new Set(savedF.filter((id) => FILTERS.some((f) => f.id === id)));
   } catch (e) { /* хранилище недоступно — просто начинаем с нуля */ }
 
   const save = () => {
-    try { localStorage.setItem(STORE_KEY, JSON.stringify([...selected])); } catch (e) { /* ничего */ }
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify([...selected]));
+      localStorage.setItem(FILTER_KEY, JSON.stringify([...filters]));
+    } catch (e) { /* ничего */ }
   };
+  const passFilters = (d) => FILTERS.every((f) => !filters.has(f.id) || f.test(d));
 
   const norm = (s) => s.toLowerCase().replace(/ё/g, 'е').trim();
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -82,7 +102,8 @@
   // Необязательные продукты («по желанию») не мешают блюду попасть в «можно приготовить»
   const isOptional = (d, id) => (OPTIONAL[d.id] || []).includes(id);
   const missingOf = (d) => d.ing.filter((i) => !isOptional(d, i) && !selected.has(i));
-  const catName = (id) => (CATEGORIES.find((c) => c.id === id) || {}).name;
+  // Халяль: нет свинины/колбас/желатина (или они только «по желанию»)
+  const isHalal = (d) => d.ing.every((i) => !HARAM.includes(i) || isOptional(d, i));  const catName = (id) => (CATEGORIES.find((c) => c.id === id) || {}).name;
 
   function cardHTML(d, mode) {
     const miss = missingOf(d);
@@ -119,28 +140,61 @@
     }).join('');
   }
 
+  function renderFilters() {
+    const on = filters.size > 0;
+    $('#filters').innerHTML =
+      `<span class="filters__label">Фильтры:</span>` +
+      FILTERS.map((f) => `<button type="button" class="filter" data-f="${f.id}" aria-pressed="${filters.has(f.id)}">${f.name}</button>`).join('') +
+      (on ? '<button type="button" class="link filters__reset" id="filtersReset">Сбросить фильтры</button>' : '');
+    $('#filtersNote').textContent = filters.has('halal')
+      ? '🌙 Халяль — блюда без свинины, колбас, сосисок и желатина. Мясо, фарш и курицу бери с маркировкой «Халяль».'
+      : '';
+  }
+
+  // Какой один продукт выгоднее всего докупить: сколько блюд он «откроет» целиком
+  function bestBuysHTML(pool) {
+    const gain = {};
+    pool.forEach((d) => {
+      const m = missingOf(d);
+      if (m.length === 1) gain[m[0]] = (gain[m[0]] || 0) + 1;
+    });
+    const top = Object.entries(gain).filter(([, n]) => n >= 2).sort((a, b) => b[1] - a[1]).slice(0, 3);
+    if (!top.length) return '';
+    return `<div class="bestbuy"><span class="bestbuy__label">💡 Выгоднее всего докупить:</span>${top.map(([id, n]) =>
+      `<a class="bestbuy__item" href="https://lavka.yandex.ru/search?text=${encodeURIComponent(searchName(byId[id].name))}" target="_blank" rel="noopener" title="Найти в Яндекс Лавке">
+        <b>${byId[id].name}</b> — откроется ещё ${n} ${plural(n, 'блюдо', 'блюда', 'блюд')}</a>`).join('')}</div>`;
+  }
+
   function renderResults() {
     const inCat = (d) => activeCat === 'all' || d.cat === activeCat;
     const out = $('#results');
+    const pool = DISHES.filter(passFilters);
+    const fNote = filters.size ? ' (с учётом фильтров)' : '';
+    const noneForFilters = '<div class="nothing"><b>Под эти фильтры ничего нет</b>Попробуй снять один из фильтров.</div>';
+    renderFilters();
 
     if (selected.size === 0) {
-      renderTabs(DISHES);
-      $('#resultsHint').textContent = 'Пока продукты не выбраны, показываем все блюда. Отметь продукты выше — и мы подберём подходящие.';
-      const list = DISHES.filter(inCat);
-      out.innerHTML = `<div class="block"><div class="cards">${list.map((d) => cardHTML(d, 'all')).join('')}</div></div>`;
+      renderTabs(pool);
+      $('#resultsHint').textContent = filters.size
+        ? `Продукты не выбраны — показываем все блюда под фильтры: ${pool.length}.`
+        : 'Пока продукты не выбраны, показываем все блюда. Отметь продукты выше — и мы подберём подходящие.';
+      const list = pool.filter(inCat);
+      out.innerHTML = list.length
+        ? `<div class="block"><div class="cards">${list.map((d) => cardHTML(d, 'all')).join('')}</div></div>`
+        : noneForFilters;
       return;
     }
 
-    const ready = DISHES.filter((d) => missingOf(d).length === 0);
-    const almost = DISHES.filter((d) => { const m = missingOf(d).length; return m >= 1 && m <= 2; })
+    const ready = pool.filter((d) => missingOf(d).length === 0);
+    const almost = pool.filter((d) => { const m = missingOf(d).length; return m >= 1 && m <= 2; })
       .sort((a, b) => missingOf(a).length - missingOf(b).length || b.ing.length - a.ing.length);
     renderTabs([...ready, ...almost]);
 
     const r = ready.filter(inCat);
     const a = almost.filter(inCat);
     $('#resultsHint').textContent = ready.length
-      ? `Из твоих продуктов получится ${ready.length} ${plural(ready.length, 'блюдо', 'блюда', 'блюд')}, и ещё ${almost.length} — если докупить немного.`
-      : 'Готовых вариантов пока нет — но вот что получится, если докупить пару продуктов.';
+      ? `Из твоих продуктов получится ${ready.length} ${plural(ready.length, 'блюдо', 'блюда', 'блюд')}, и ещё ${almost.length} — если докупить немного${fNote}.`
+      : `Готовых вариантов пока нет — но вот что получится, если докупить пару продуктов${fNote}.`;
 
     let html = '';
     html += `<div class="block"><div class="block__head"><h3>Можно приготовить <em>сейчас</em></h3><span>все продукты есть</span></div>`;
@@ -149,6 +203,7 @@
       : '<div class="nothing"><b>Пока ничего</b>Отметь ещё продукты или загляни в блок ниже.</div>';
     html += '</div>';
     html += `<div class="block"><div class="block__head"><h3>Докупи <em>1–2 продукта</em></h3><span>и можно готовить</span></div>`;
+    html += bestBuysHTML(pool);
     html += a.length
       ? `<div class="cards">${a.map((d) => cardHTML(d, 'match')).join('')}</div>`
       : '<div class="nothing"><b>Тут пусто</b>В этой категории нет блюд, для которых не хватает одного-двух продуктов.</div>';
@@ -187,7 +242,9 @@
       const p = byId[pid];
       const have = selected.has(pid);
       const opt = isOptional(d, pid);
-      const optTag = opt ? '<small class="opt">по желанию</small>' : '';
+      const optTag = opt
+        ? `<small class="opt">${HARAM.includes(pid) ? 'по желанию · для халяль не добавляй' : 'по желанию'}</small>`
+        : '';
       if (!hasAny) return `<li class="have${opt ? ' optional' : ''}"><span class="mark">•</span><span>${p.name}</span>${optTag}</li>`;
       if (have) return `<li class="have"><span class="mark">✓</span><span>${p.name}</span>${optTag}</li>`;
       if (opt) return `<li class="optional"><span class="mark">–</span><span>${p.name}</span>${optTag}</li>`;
@@ -199,7 +256,7 @@
         <div>
           <p class="eyebrow"><i></i>${CUISINES[d.cui]}</p>
           <h2 id="mTitle">${d.name}</h2>
-          <div class="recipe__meta"><span class="pill">${catName(d.cat)}</span><span class="pill">⏱ ${minutes(d.time)}</span><span class="pill">${d.ing.length} ${plural(d.ing.length, 'продукт', 'продукта', 'продуктов')}</span></div>
+          <div class="recipe__meta"><span class="pill">${catName(d.cat)}</span><span class="pill">⏱ ${minutes(d.time)}</span><span class="pill">${d.ing.length} ${plural(d.ing.length, 'продукт', 'продукта', 'продуктов')}</span>${isHalal(d) ? '<span class="pill pill--halal" title="Без свинины, колбас и желатина"><b lang="ar">حلال</b> Халяль</span>' : ''}</div>
           <p>${d.desc}</p>
         </div>
       </div>
@@ -245,8 +302,21 @@
     activeCat = t.dataset.cat;
     renderResults();
   });
+  $('#filters').addEventListener('click', (e) => {
+    if (e.target.id === 'filtersReset') { filters.clear(); renderResults(); save(); return; }
+    const b = e.target.closest('.filter');
+    if (!b) return;
+    const f = FILTERS.find((x) => x.id === b.dataset.f);
+    if (filters.has(f.id)) filters.delete(f.id);
+    else {
+      if (f.group) FILTERS.filter((x) => x.group === f.group).forEach((x) => filters.delete(x.id));
+      filters.add(f.id);
+    }
+    renderResults();
+    save();
+  });
   $('#results').addEventListener('click', (e) => {
-    if (e.target.closest('.shop')) return; // ссылка на магазин — не открываем рецепт
+    if (e.target.closest('.shop') || e.target.closest('.bestbuy')) return; // ссылки на магазин — не открываем рецепт
     const card = e.target.closest('.card');
     if (card) openRecipe(card.dataset.dish);
   });
