@@ -43,9 +43,13 @@
     const mobile = vw < 700;
     const n = items.length;
 
-    // Сколько «уехал» первый экран: 0 — башня на месте, 1 — башня уже плывёт по центру
-    const heroRect = tower.getBoundingClientRect();
-    const lift = ease(clamp((vh * 0.35 - heroRect.top) / (vh * 0.7)));
+    // Сколько «уехал» первый экран. Ингредиенты срываются ПО ОЧЕРЕДИ (на телефоне — парами),
+    // а не всей башней сразу; на телефоне путь растянут на большую прокрутку — переход мягче.
+    // отсчёт от прокрутки: пока страницу не листали — башня стоит ровно на месте
+    const P = clamp(Math.max(0, y - 30) / (vh * (mobile ? 0.55 : 0.6)), 0, 2);
+    const smoothK = mobile ? 0.1 : 0.18; // насколько быстро «догоняют» цель (меньше — плавнее)
+    let settled = true;
+    let liftSum = 0;
 
     // Колонна по центру экрана: те же слои, чуть плотнее
     const colX = vw / 2;
@@ -69,7 +73,19 @@
       const cy = colTop + it.i * step;
       // 3) прыжок в тарелку, по очереди — снизу вверх, как падают слои
       const order = n - 1 - it.i;
-      const di = ease(clamp((dive - order * 0.045) / 0.6));
+      // целевые значения прогресса…
+      const start = mobile ? Math.floor(it.i / 2) * 0.24 : it.i * 0.08;
+      const liftT = clamp((P - start) / 0.55);
+      const diT = clamp((dive - order * 0.045) / 0.6);
+      // …и мягкое «догоняние»: даже если прокрутка дёрганая, картинка едет плавно
+      if (it.ls === undefined) { it.ls = liftT; it.ds = diT; }
+      it.ls += (liftT - it.ls) * smoothK;
+      it.ds += (diT - it.ds) * smoothK;
+      if (Math.abs(liftT - it.ls) < 0.001) it.ls = liftT; else settled = false;
+      if (Math.abs(diT - it.ds) < 0.001) it.ds = diT; else settled = false;
+      const lift = ease(it.ls);
+      const di = ease(it.ds);
+      liftSum += lift;
       const visL = Math.max(pr.left, 0);
       const visR = Math.min(pr.right, vw);
       const tx = visL + (visR - visL) * (0.5 + (it.i - (n - 1) / 2) * 0.04);
@@ -98,10 +114,15 @@
       const op = opacity.toFixed(2);
       if (it.op !== op) { it.img.style.opacity = op; it.op = op; }
       it.img.style.transform = `translate(${(x - size / 2).toFixed(1)}px, ${(yy - size / 2).toFixed(1)}px) rotate(${rot.toFixed(1)}deg) scale(${scale.toFixed(3)})`;
-      if (it.lbl) { const lo = clamp(1 - lift * 2.5).toFixed(2); if (it.lo !== lo) { it.lbl.style.opacity = lo; it.lo = lo; } }
+      if (it.lbl) { const lo = clamp(1 - lift * 3).toFixed(2); if (it.lo !== lo) { it.lbl.style.opacity = lo; it.lo = lo; } }
     });
     if (plateBox) plateBox.classList.toggle('full', landed === n);
+    // оранжевое свечение за башней гаснет по мере того, как ингредиенты уезжают
+    const glow = (1 - liftSum / n).toFixed(2);
+    if (glow !== lastGlow) { tower.parentElement.style.setProperty('--glow', glow); lastGlow = glow; }
+    if (!settled) request(); // ещё догоняют цель — рисуем следующий кадр
   }
+  let lastGlow = '';
 
   const request = () => { if (!queued) { queued = true; requestAnimationFrame(frame); } };
   addEventListener('scroll', request, { passive: true });
