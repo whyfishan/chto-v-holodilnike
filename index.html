@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Что в холодильнике</title>
+  <meta name="description" content="Отметь продукты, которые есть дома, — и узнай, что из них приготовить.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;600;700&family=Manrope:wght@400;500;600;700&family=Marck+Script&display=swap&subset=cyrillic" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap top__in">
+    <a class="logo" href="#начало" aria-label="На главную">
+      <span>Что в</span><span>холодильнике</span>
+    </a>
+    <nav class="nav">
+      <a href="#продукты">Продукты</a>
+      <a href="#блюда">Блюда</a>
+      <a href="#как">Как это работает</a>
+      <a href="#связь">Связь</a>
+    </nav>
+    <a class="top__counter" href="#продукты" title="Выбрано продуктов">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm-2 8h14M9 5v2m0 6v3"/></svg>
+      <b id="topCount">0</b>
+    </a>
+  </div>
+</header>
+
+<main>
+  <!-- Первый экран -->
+  <section class="hero wrap" id="начало">
+    <div class="hero__text">
+      <p class="eyebrow"><i></i>Домашняя кухня</p>
+      <h1>Готовим из того,<br>что <em>есть дома</em></h1>
+      <div class="divider"><span></span><svg viewBox="0 0 40 12" aria-hidden="true"><path d="M2 6c8-6 14 6 22 0s10-4 14 0"/></svg></div>
+      <p class="lead">Отметь продукты из холодильника — сайт подскажет, что приготовить прямо сейчас и что получится, если докупить пару продуктов.</p>
+      <div class="hero__btns">
+        <a class="btn btn--fill" href="#продукты">Выбрать продукты <span aria-hidden="true">→</span></a>
+        <button class="btn" id="demoBtn" type="button">Показать пример</button>
+      </div>
+      <ul class="perks">
+        <li><b>60 блюд</b><span>супы, горячее, десерты</span></li>
+        <li><b>3 кухни</b><span>русская, итальянская, бургеры</span></li>
+        <li><b>Мини-рецепты</b><span>коротко и по шагам</span></li>
+      </ul>
+    </div>
+    <div class="hero__art">
+      <div class="hero__plate"><img src="img/borsch.webp" alt="Тарелка борща"></div>
+      <div class="hero__stamp"><small>с любовью</small><b>ДОМА</b><small>вкуснее</small></div>
+    </div>
+  </section>
+
+  <!-- Шаг 1: продукты -->
+  <section class="section wrap" id="продукты">
+    <div class="head">
+      <p class="eyebrow eyebrow--center"><i></i>Шаг первый<i></i></p>
+      <h2>Что лежит в <em>холодильнике</em>?</h2>
+      <p class="sub">Нажми на продукты, которые у тебя есть. Соль, перец, сахар, растительное масло и воду мы считаем всегда в наличии.</p>
+    </div>
+
+    <div class="pick">
+      <div class="pick__bar">
+        <label class="search">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+          <input id="search" type="search" placeholder="Найти продукт, например «свёкла»" autocomplete="off">
+        </label>
+        <div class="pick__info">
+          <span>Выбрано: <b id="pickCount">0</b></span>
+          <button class="link" id="clearBtn" type="button">Сбросить</button>
+        </div>
+      </div>
+      <div id="groups" class="groups"></div>
+    </div>
+  </section>
+
+  <!-- Шаг 2: блюда -->
+  <section class="section wrap" id="блюда">
+    <div class="head">
+      <p class="eyebrow eyebrow--center"><i></i>Шаг второй<i></i></p>
+      <h2>Что можно <em>приготовить</em></h2>
+      <p class="sub" id="resultsHint">Пока продукты не выбраны, показываем все блюда.</p>
+    </div>
+
+    <div class="tabs" id="tabs" role="tablist"></div>
+
+    <div id="results"></div>
+  </section>
+
+  <!-- Как это работает -->
+  <section class="section wrap how" id="как">
+    <div class="how__text">
+      <p class="eyebrow"><i></i>Как это работает</p>
+      <h2>Просто, как <em>раз-два-три</em></h2>
+      <p class="sub sub--left">Никакой регистрации. Выбранные продукты запоминаются на этом устройстве, так что в следующий раз не придётся отмечать всё заново.</p>
+      <p class="signature">Приятного аппетита!</p>
+    </div>
+    <ol class="how__steps">
+      <li><b>01</b><span>Отметь продукты</span><small>Всё, что есть в холодильнике и на полках.</small></li>
+      <li><b>02</b><span>Выбери блюдо</span><small>Сначала то, что можно приготовить сразу.</small></li>
+      <li><b>03</b><span>Докупи недостающее</span><small>Через Яндекс Лавку — в один клик.</small></li>
+    </ol>
+  </section>
+
+  <!-- Связь с разработчиком -->
+  <section class="section wrap" id="связь">
+    <div class="contact">
+      <div class="contact__text">
+        <p class="eyebrow"><i></i>Связь с разработчиком</p>
+        <h2>Нашли ошибку или есть <em>идея</em>?</h2>
+        <p class="sub sub--left">Если что-то работает не так, не хватает любимого блюда или есть мысль, как сделать сайт удобнее, — напишите мне в Телеграм. Буду рад любому отзыву.</p>
+      </div>
+      <a class="tg" href="https://t.me/whyfishan" target="_blank" rel="noopener">
+        <span class="tg__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M21.5 4.2 2.9 11.4c-1.2.5-1.2 1.2-.2 1.5l4.7 1.5 1.8 5.6c.2.6.1.9.8.9.5 0 .7-.2 1-.5l2.3-2.2 4.8 3.5c.9.5 1.5.2 1.7-.8l3.1-14.8c.3-1.3-.5-1.9-1.4-1.5ZM8.2 14.1l9.9-6.3c.5-.3.9-.1.5.2l-8.5 7.7-.3 3.5-1.6-5.1Z"/></svg>
+        </span>
+        <span class="tg__text"><small>Написать в Телеграм</small><b>@whyfishan</b></span>
+        <span class="tg__arrow" aria-hidden="true">→</span>
+      </a>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot__in">
+    <a class="logo" href="#начало"><span>Что в</span><span>холодильнике</span></a>
+    <p>Домашний проект для семьи и друзей. Фотографии блюд — с Викисклада, под свободными лицензиями. КБЖУ — примерные средние значения из открытых таблиц.</p>
+    <a class="link" href="https://t.me/whyfishan" target="_blank" rel="noopener">Связь: @whyfishan</a>
+    <p class="foot__year">© 2026</p>
+  </div>
+</footer>
+
+<!-- Нижняя плашка на телефоне -->
+<a class="mobilebar" id="mobileBar" href="#блюда">
+  <span>Выбрано продуктов: <b id="mobileCount">0</b></span>
+  <span>Показать блюда →</span>
+</a>
+
+<!-- Окно рецепта -->
+<dialog class="modal" id="modal" aria-labelledby="mTitle">
+  <button class="modal__close" type="button" id="modalClose" aria-label="Закрыть">✕</button>
+  <div class="modal__body" id="modalBody"></div>
+</dialog>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
