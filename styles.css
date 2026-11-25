@@ -547,3 +547,56 @@ html .card__go, html .tg, html .top__counter, html .modal__close, html .btn {
   .fall-item { filter: none; }
   .hero__art::before { filter: none; }
 }
+/* ===== Финал: лёгкая отрисовка ===== */
+.fall-item { will-change: transform, opacity; }
+.finale__plate::after { will-change: transform, opacity; } /* пар двигается без перерисовки размытия */
+@media (max-width: 700px) {
+  .finale__plate::after { display: none; } /* пар на телефоне — тяжёлое размытие, убираем */
+  /* стекло печати на телефоне без живого размытия — оно пересчитывалось от каждого пролетающего ингредиента */
+  .glass-stamp { -webkit-backdrop-filter: none; backdrop-filter: none; background: linear-gradient(140deg, rgba(255,255,255,.16), rgba(255,255,255,.04) 48%, rgba(240,138,36,.1)), rgba(13,13,13,.55); }
+}
+/* Печать в самом верхнем слое (borsch.js переносит её копию сюда): ингредиенты пролетают ЗА ней */
+.glass-stamp--top { position: absolute !important; transform: none !important; margin: 0; z-index: 16; pointer-events: none; }
+/* ===== Поделиться ===== */
+.share-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; align-items: flex-start; }
+.share { display: flex; flex-direction: column; gap: 8px; }
+.share__btn { padding: 9px 16px; font-size: 12px; }
+.share__opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.share__opts[hidden] { display: none; }
+.share__opt {
+  font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--card); color: var(--text);
+}
+.share__opt:hover { border-color: var(--accent); color: var(--accent); }
+.recipe__back { margin-bottom: 14px; font-size: 13px; }
+
+/* ===== Меню на неделю ===== */
+.weekbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 16px; margin: -8px 0 30px; }
+.weekbar span { color: #fff; font-size: 13px; text-shadow: 0 1px 8px rgba(0,0,0,.9); }
+.week h2 { font-size: 30px; margin-bottom: 6px; }
+.week__hint { color: var(--muted); font-size: 13px; margin: 0 0 18px; }
+.week__days { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.week__day {
+  display: grid; grid-template-columns: 112px 1fr auto auto; gap: 12px; align-items: center;
+  padding: 8px 12px; border-radius: 14px; background: var(--card); border: 1px solid var(--line-soft);
+}
+.week__dname { color: var(--accent); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.week__dish { display: flex; align-items: center; gap: 12px; background: none; border: 0; padding: 0; text-align: left; min-width: 0; }
+.week__dish img { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; flex: none; }
+.week__dish b { display: block; font-size: 15px; }
+.week__dish small { color: var(--muted); font-size: 12px; }
+.week__dish:hover b { color: var(--accent); }
+.week__st { font-size: 12px; font-weight: 600; white-space: nowrap; }
+.week__st.ok { color: var(--ok); } .week__st.miss { color: var(--miss); }
+.week__swap { font-size: 12px; white-space: nowrap; }
+.week__shop { margin-top: 24px; }
+.week__shop h3 { font-size: 18px; margin: 0 0 12px; }
+.week__list { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.week__list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; padding: 8px 0; border-bottom: 1px dashed #333; }
+.week__list b { display: block; font-size: 14px; }
+.week__list small { color: var(--muted); font-size: 12px; }
+@media (max-width: 600px) {
+  .week__day { grid-template-columns: 1fr auto; grid-template-areas: "name swap" "dish dish" "st st"; gap: 6px 10px; }
+  .week__dname { grid-area: name; } .week__swap { grid-area: swap; } .week__dish { grid-area: dish; } .week__st { grid-area: st; }
+  .week h2 { font-size: 24px; }
+}

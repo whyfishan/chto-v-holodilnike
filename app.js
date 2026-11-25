@@ -122,7 +122,7 @@
     return `<article class="card" tabindex="0" role="button" data-dish="${d.id}" aria-label="Открыть рецепт: ${esc(d.name)}">
       <span class="card__tag">${catName(d.cat)}</span>
       <span class="card__time">${minutes(d.time)}</span>
-      <div class="card__img"><img src="img/${d.id}.webp" alt="${esc(d.name)}" loading="lazy"></div>
+      <div class="card__img"><img src="img/${d.id}.jpg" alt="${esc(d.name)}" loading="lazy"></div>
       <h4>${d.name}</h4>
       <p>${d.desc}</p>
       ${NUTRITION[d.id] ? `<span class="card__kcal">≈ ${kcalOf(NUTRITION[d.id])} ккал на 100 г</span>` : ''}
@@ -232,7 +232,61 @@
     </div>`;
   }
 
-  function openRecipe(id) {
+  // ----- «Поделиться» -----
+  // Ссылка ведёт сразу на рецепт: адрес сайта + #r=id (сайт откроет это блюдо)
+  const siteURL = () => location.origin + location.pathname;
+  const dishURL = (d) => `${siteURL()}#r=${d.id}`;
+  const missingNames = (d) => missingOf(d).map((pid) => byId[pid].name);
+
+  function recipeText(d) {
+    const ings = d.ing.map((pid) => '• ' + byId[pid].name + (isOptional(d, pid) ? ' (по желанию)' : '')).join('\n');
+    const steps = d.steps.map((s, i) => `${i + 1}. ${s}`).join('\n');
+    return `🍲 ${d.name} — ${minutes(d.time)}\n\nПродукты:\n${ings}\n+ соль, перец, масло — по вкусу\n\nКак готовить:\n${steps}`;
+  }
+  const listText = (title, names) => `🛒 ${title}\n\n${names.map((n) => '• ' + n).join('\n')}`;
+
+  // Кнопка «Поделиться»: на телефоне — системное меню (Телеграм, WhatsApp, ВК…),
+  // на компьютере — раскрываются кнопки Телеграм / WhatsApp / Скопировать
+  const canNativeShare = () => !!navigator.share && matchMedia('(pointer: coarse)').matches;
+  function shareBlockHTML(kind, label) {
+    return `<div class="share" data-kind="${kind}">
+      <button type="button" class="btn share__btn" data-share="${kind}">↗ ${label}</button>
+      <div class="share__opts" hidden>
+        <a class="share__opt" data-to="tg" href="#" target="_blank" rel="noopener">Телеграм</a>
+        <a class="share__opt" data-to="wa" href="#" target="_blank" rel="noopener">WhatsApp</a>
+        <button type="button" class="share__opt" data-to="copy">Скопировать</button>
+      </div>
+    </div>`;
+  }
+  async function copyText(text, btn) {
+    try { await navigator.clipboard.writeText(text); }
+    catch (e) {
+      const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta);
+      ta.select(); try { document.execCommand('copy'); } catch (e2) { /* ничего */ } ta.remove();
+    }
+    if (btn) { const old = btn.textContent; btn.textContent = 'Скопировано ✓'; setTimeout(() => (btn.textContent = old), 1600); }
+  }
+  // payload: { title, text, url } — что именно отправляем
+  function wireShare(root, getPayload) {
+    root.querySelectorAll('.share').forEach((box) => {
+      const kind = box.dataset.kind;
+      const opts = box.querySelector('.share__opts');
+      box.querySelector('.share__btn').addEventListener('click', async () => {
+        const p = getPayload(kind);
+        if (canNativeShare()) {
+          try { await navigator.share({ title: p.title, text: p.text, url: p.url }); } catch (e) { /* отменили */ }
+          return;
+        }
+        const full = p.text + (p.url ? '\n\n' + p.url : '');
+        opts.querySelector('[data-to="tg"]').href = `https://t.me/share/url?url=${encodeURIComponent(p.url || siteURL())}&text=${encodeURIComponent(p.text)}`;
+        opts.querySelector('[data-to="wa"]').href = `https://wa.me/?text=${encodeURIComponent(full)}`;
+        opts.querySelector('[data-to="copy"]').onclick = (e) => copyText(full, e.currentTarget);
+        opts.hidden = !opts.hidden;
+      });
+    });
+  }
+
+  function openRecipe(id, opts = {}) {
     const d = DISHES.find((x) => x.id === id);
     if (!d) return;
     const hasAny = selected.size > 0;
@@ -250,14 +304,20 @@
       if (opt) return `<li class="optional"><span class="mark">–</span><span>${p.name}</span>${optTag}</li>`;
       return `<li class="need"><span class="mark">✕</span><span>${p.name}</span>${shopsHTML(p.name)}</li>`;
     }).join('');
+    const miss = hasAny ? missingNames(d) : [];
     $('#modalBody').innerHTML = `<div class="recipe">
+      ${opts.back ? '<button type="button" class="link recipe__back" id="backToWeek">← К меню на неделю</button>' : ''}
       <div class="recipe__top">
-        <div class="recipe__img"><img src="img/${d.id}.webp" alt="${esc(d.name)}"></div>
+        <div class="recipe__img"><img src="img/${d.id}.jpg" alt="${esc(d.name)}"></div>
         <div>
           <p class="eyebrow"><i></i>${CUISINES[d.cui]}</p>
           <h2 id="mTitle">${d.name}</h2>
           <div class="recipe__meta"><span class="pill">${catName(d.cat)}</span><span class="pill">⏱ ${minutes(d.time)}</span><span class="pill">${d.ing.length} ${plural(d.ing.length, 'продукт', 'продукта', 'продуктов')}</span>${isHalal(d) ? '<span class="pill pill--halal" title="Без свинины, колбас и желатина"><b lang="ar">حلال</b> Халяль</span>' : ''}</div>
           <p>${d.desc}</p>
+          <div class="share-row">
+            ${shareBlockHTML('recipe', 'Поделиться рецептом')}
+            ${miss.length ? shareBlockHTML('list', 'Отправить список покупок') : ''}
+          </div>
         </div>
       </div>
       ${nutritionHTML(d.id)}
@@ -274,9 +334,110 @@
       </div>
       ${NUTRITION[d.id] && NUTRITION[d.id].fact ? `<div class="fact"><span class="fact__icon" aria-hidden="true">💡</span><div><b>Интересный факт</b><p>${NUTRITION[d.id].fact}</p></div></div>` : ''}
     </div>`;
+    wireShare($('#modalBody'), (kind) => kind === 'list'
+      ? { title: 'Список покупок', text: listText(`Купить для «${d.name}»:`, miss), url: dishURL(d) }
+      : { title: d.name, text: recipeText(d), url: dishURL(d) });
+    const back = $('#backToWeek');
+    if (back) back.addEventListener('click', openWeek);
+    showModal();
+  }
+
+  function showModal() {
     const m = $('#modal');
-    if (typeof m.showModal === 'function') m.showModal(); else m.setAttribute('open', '');
+    if (!m.open) { if (typeof m.showModal === 'function') m.showModal(); else m.setAttribute('open', ''); }
     m.scrollTop = 0;
+  }
+
+  // ----- Меню на неделю -----
+  const DAYS = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
+  const DINNER_CATS = ['soup', 'hot', 'pasta', 'pizza', 'burger', 'bake']; // на ужин — без завтраков, десертов и закусок
+  const CAT_LIMIT = { soup: 2, hot: 3, pasta: 2, pizza: 1, burger: 1, bake: 1 };
+  const WEEK_KEY = 'holodilnik-menu';
+  let week = [];
+  try {
+    const saved = JSON.parse(localStorage.getItem(WEEK_KEY) || '[]');
+    if (Array.isArray(saved)) week = saved.filter((id) => DISHES.some((d) => d.id === id));
+  } catch (e) { /* ничего */ }
+  const saveWeek = () => { try { localStorage.setItem(WEEK_KEY, JSON.stringify(week)); } catch (e) { /* ничего */ } };
+
+  // Кандидаты: подходят под фильтры, сначала те, что можно приготовить сразу, потом — с докупкой.
+  // Внутри одинаковых — случайный порядок, чтобы меню было разным.
+  function weekCandidates() {
+    return DISHES.filter((d) => DINNER_CATS.includes(d.cat) && passFilters(d))
+      .map((d) => ({ d, m: missingOf(d).length, r: Math.random() }))
+      .sort((a, b) => a.m - b.m || a.r - b.r)
+      .map((x) => x.d);
+  }
+  function buildWeek() {
+    const pool = weekCandidates();
+    const out = [];
+    const count = {};
+    const fits = (d) => (count[d.cat] || 0) < (CAT_LIMIT[d.cat] || 1) && (!out.length || out[out.length - 1].cat !== d.cat);
+    for (const d of pool) { if (out.length === 7) break; if (fits(d)) { out.push(d); count[d.cat] = (count[d.cat] || 0) + 1; } }
+    for (const d of pool) { if (out.length === 7) break; if (!out.includes(d)) out.push(d); } // если строго не набралось
+    week = out.map((d) => d.id);
+    saveWeek();
+  }
+  function replaceDay(i) {
+    const cur = DISHES.find((d) => d.id === week[i]);
+    const pool = weekCandidates().filter((d) => !week.includes(d.id));
+    const next = pool.find((d) => cur && d.cat === cur.cat) || pool[0];
+    if (next) { week[i] = next.id; saveWeek(); }
+  }
+  // Общий список покупок: чего не хватает на всю неделю, без повторов, с пометкой «для каких блюд»
+  function weekShopping(dishes) {
+    const need = new Map();
+    dishes.forEach((d) => missingOf(d).forEach((pid) => {
+      if (!need.has(pid)) need.set(pid, []);
+      need.get(pid).push(d.name);
+    }));
+    return [...need.entries()].map(([pid, for_]) => ({ pid, name: byId[pid].name, for_ }));
+  }
+
+  function openWeek() {
+    if (!week.length) buildWeek();
+    const dishes = week.map((id) => DISHES.find((d) => d.id === id)).filter(Boolean);
+    const shop = weekShopping(dishes);
+    const fNote = filters.size ? ' Учтены включённые фильтры.' : '';
+    const hint = selected.size
+      ? `Собрано из твоих продуктов: сначала то, что можно приготовить сразу.${fNote}`
+      : `Продукты не выбраны — поэтому меню просто разнообразное, а список покупок полный. Отметь продукты, и меню подстроится.${fNote}`;
+    $('#modalBody').innerHTML = `<div class="week">
+      <p class="eyebrow"><i></i>7 ужинов</p>
+      <h2 id="mTitle">Меню на <em>неделю</em></h2>
+      <p class="week__hint">${hint}</p>
+      <ol class="week__days">${dishes.map((d, i) => {
+        const m = missingOf(d).length;
+        return `<li class="week__day">
+          <span class="week__dname">${DAYS[i]}</span>
+          <button type="button" class="week__dish" data-open="${d.id}">
+            <img src="img/${d.id}.jpg" alt="">
+            <span><b>${d.name}</b><small>${catName(d.cat)} · ${minutes(d.time)}${NUTRITION[d.id] ? ' · ≈ ' + kcalOf(NUTRITION[d.id]) + ' ккал' : ''}</small></span>
+          </button>
+          <span class="week__st ${m ? 'miss' : 'ok'}">${m ? 'докупить: ' + m : '✓ всё есть'}</span>
+          <button type="button" class="link week__swap" data-swap="${i}" title="Подобрать другое блюдо">↻ Заменить</button>
+        </li>`;
+      }).join('')}</ol>
+      <div class="week__shop">
+        <h3>Список покупок на неделю</h3>
+        ${shop.length
+          ? `<ul class="week__list">${shop.map((s) => `<li><span><b>${s.name}</b><small>для: ${s.for_.join(', ')}</small></span>${shopsHTML(s.name)}</li>`).join('')}</ul>
+             <div class="share-row">${shareBlockHTML('week', 'Отправить список покупок')}</div>`
+          : '<p class="week__hint">Всё есть — докупать ничего не нужно 🎉</p>'}
+      </div>
+      <div class="share-row">
+        ${shareBlockHTML('weekmenu', 'Поделиться меню')}
+        <button type="button" class="btn" id="weekRebuild">↻ Собрать заново</button>
+      </div>
+    </div>`;
+    const body = $('#modalBody');
+    body.querySelectorAll('[data-open]').forEach((b) => b.addEventListener('click', () => openRecipe(b.dataset.open, { back: true })));
+    body.querySelectorAll('[data-swap]').forEach((b) => b.addEventListener('click', () => { replaceDay(+b.dataset.swap); openWeek(); }));
+    $('#weekRebuild').addEventListener('click', () => { buildWeek(); openWeek(); });
+    wireShare(body, (kind) => kind === 'week'
+      ? { title: 'Список покупок на неделю', text: listText('Купить на неделю:', shop.map((s) => s.name)), url: siteURL() }
+      : { title: 'Меню на неделю', text: '📅 Меню на неделю\n\n' + dishes.map((d, i) => `${DAYS[i]} — ${d.name}`).join('\n'), url: siteURL() });
+    showModal();
   }
 
   // ----- события -----
@@ -329,8 +490,22 @@
   const modal = $('#modal');
   $('#modalClose').addEventListener('click', () => modal.close());
   modal.addEventListener('click', (e) => { if (e.target === modal) modal.close(); });
+  // закрыли рецепт, открытый по ссылке, — убираем #r=… из адреса, чтобы ссылка снова срабатывала
+  modal.addEventListener('close', () => {
+    if (location.hash.startsWith('#r=')) history.replaceState(null, '', location.pathname + location.search);
+  });
+
+  $('#weekBtn').addEventListener('click', () => openWeek());
+
+  // Ссылка вида …#r=borsch открывает сразу этот рецепт
+  function openFromHash() {
+    const m = /^#r=([a-z0-9]+)$/.exec(location.hash);
+    if (m && DISHES.some((d) => d.id === m[1])) openRecipe(m[1]);
+  }
+  addEventListener('hashchange', openFromHash);
 
   // ----- старт -----
   renderGroups();
   update();
+  openFromHash();
 })();
